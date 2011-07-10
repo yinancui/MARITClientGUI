@@ -129,7 +129,7 @@ void Client::readFortune()
     //QString data_show;
 
     int count = 0;
-    for (count = 0; count < 100; count++) {
+    for (count = 0; count < 10; count++) {
         tcpSocket->read(buf, 512);
 
         data_show = QString::number(count) + tr(" ") + tr(buf);
