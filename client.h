@@ -3,6 +3,17 @@
 
 #include <QDialog>
 #include <QTcpSocket>
+#include "console.h"
+
+// vtk includes ------------------------
+//#include <QVTKWidget.h>
+//#include <vtkSmartPointer.h>
+//#include <vtkOBJReader.h>
+//#include <vtkPolyDataMapper.h>
+//#include <vtkActor.h>
+//#include <vtkRenderer.h>
+//#include <vtkRenderWindow.h>
+//---------------------------------------
 
 namespace Ui {
     class Client;
@@ -14,6 +25,9 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QTcpSocket;
+class QTextEdit;
+class QTextBrowser;
+class QProcess;
 QT_END_NAMESPACE
 
 
@@ -38,13 +52,30 @@ private:
     QLineEdit *hostLineEdit;
     QLineEdit *portLineEdit;
     QLabel *statusLabel;
+    QTextEdit* textEdit;
+    QTextBrowser* textBrowser;
     QPushButton *getFortuneButton;
+
     QPushButton *quitButton;
     QDialogButtonBox *buttonBox;
 
     QTcpSocket *tcpSocket;
     QString currentFortune;
     quint16 blockSize;
+
+    QString data_show;
+
+    console* myconsole;
+
+
+
+//    // vtk -------------------------------
+//    QVTKWidget* vtkWidget;
+//    vtkSmartPointer<vtkOBJReader> reader;
+//    vtkSmartPointer<vtkPolyDataMapper> mapper;
+//    vtkSmartPointer<vtkActor> actor;
+//    vtkSmartPointer<vtkRenderer> renderer;
+    //QProcess* proc;
 };
 
 #endif // CLIENT_H
