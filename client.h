@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QTcpSocket>
 #include "console.h"
+#include "ClientCodes.h"
 
 // vtk includes ------------------------
 //#include <QVTKWidget.h>
@@ -42,8 +43,9 @@ public:
 private slots:
     void requestNewFortune();
     void readFortune();
+    //int readFortune();
     void displayError(QAbstractSocket::SocketError socketError);
-    void enableGetFortuneButton();
+    void enableconnectButton();
 
 private:
     Ui::Client *ui;
@@ -54,7 +56,7 @@ private:
     QLabel *statusLabel;
     QTextEdit* textEdit;
     QTextBrowser* textBrowser;
-    QPushButton *getFortuneButton;
+    QPushButton *connectButton;
 
     QPushButton *quitButton;
     QDialogButtonBox *buttonBox;
@@ -65,7 +67,17 @@ private:
 
     QString data_show;
 
-    console* myconsole;
+    // RTE SDK
+    bool receive(QTcpSocket* pTcpSocket, char* pBuffer, int BufferSize);
+    bool receive(QTcpSocket *pTcpSocket, long int & Val)
+        {return receive(pTcpSocket, (char*)& Val, sizeof(Val));}
+    bool receive(QTcpSocket *pTcpSocket, unsigned long int & Val)
+        {return receive(pTcpSocket, (char*)& Val, sizeof(Val));}
+    bool receive(QTcpSocket *pTcpSocket, double &Val)
+        {return receive(pTcpSocket, (char*)& Val, sizeof(Val));}
+
+
+    //console* myconsole;
 
 
 

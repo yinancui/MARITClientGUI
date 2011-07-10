@@ -13,10 +13,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         client.cpp \
-    console.cpp
+    console.cpp \
+    ClientCodes.cpp
 
 HEADERS  += client.h \
-    console.h
+    console.h \
+    ClientCodes.h
 
 FORMS    += client.ui
 
