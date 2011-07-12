@@ -2,9 +2,31 @@
 #define CLIENT_H
 
 #include <QDialog>
-#include <QTcpSocket>
+//#include <QTcpSocket>
 #include "console.h"
 #include "ClientCodes.h"
+
+//------ includes from Unix socket
+#include <sys/socket.h>
+#include <cassert>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <functional>
+#include <limits>
+#include <math.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+
+
 
 // vtk includes ------------------------
 //#include <QVTKWidget.h>
@@ -25,7 +47,7 @@ class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
-class QTcpSocket;
+//class QTcpSocket;
 class QTextEdit;
 class QTextBrowser;
 class QProcess;
@@ -44,8 +66,10 @@ private slots:
     void requestNewFortune();
     void readFortune();
     //int readFortune();
-    void displayError(QAbstractSocket::SocketError socketError);
+    //void displayError(QAbstractSocket::SocketError socketError);
     void enableconnectButton();
+
+    void dummy();
 
 private:
     Ui::Client *ui;
@@ -61,20 +85,29 @@ private:
     QPushButton *quitButton;
     QDialogButtonBox *buttonBox;
 
-    QTcpSocket *tcpSocket;
-    QString currentFortune;
-    quint16 blockSize;
+    //QTcpSocket *tcpSocket;
 
-    QString data_show;
+    //QString currentFortune;
+    //quint16 blockSize;
 
-    // RTE SDK
-    bool receive(QTcpSocket* pTcpSocket, char* pBuffer, int BufferSize);
-    bool receive(QTcpSocket *pTcpSocket, long int & Val)
-        {return receive(pTcpSocket, (char*)& Val, sizeof(Val));}
-    bool receive(QTcpSocket *pTcpSocket, unsigned long int & Val)
-        {return receive(pTcpSocket, (char*)& Val, sizeof(Val));}
-    bool receive(QTcpSocket *pTcpSocket, double &Val)
-        {return receive(pTcpSocket, (char*)& Val, sizeof(Val));}
+    //QString data_show;
+
+
+    //------------- Unix socket
+    int sockfd, numbytes;
+    //char buf[MAXDATASIZE];
+    struct addrinfo hints, *servinfo, *pAddrinfo;
+    char sIPv6[INET6_ADDRSTRLEN];
+
+    bool receive(int Socket, char* pBuffer, int BufferSize);
+    bool receive(int Socket, long int & Val);
+    bool receive(int Socket, unsigned long int & Val);
+    bool receive(int Socket, double &Val);
+
+    //---------- connect to server routine
+    int connectServer();
+    void* get_in_addr(struct sockaddr* sa);
+
 
 
     //console* myconsole;
