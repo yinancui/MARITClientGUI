@@ -116,7 +116,7 @@ Client::Client(QWidget *parent) :
 
 
 
-    setWindowTitle(tr("Fortune Client"));
+    setWindowTitle(tr("MARIT ClientGUI"));
     portLineEdit->setFocus();
     std::cout << "out of ctor.\n";
 }
@@ -129,21 +129,7 @@ Client::~Client()
 
 void Client::requestNewFortune()
 {
-    //std::cout << "Connecting to server...";
     connectButton->setEnabled(false);
-
-//    std::cout << errorCode.value() << std::endl;
-//    errorCode.setValue(SERVERINFO_FAILURE);
-//    std::cout << errorCode.value() << std::endl;
-
-//    if (Client::connectServer() != 0) {
-//        std::cout << "failed to connect to server, try again.\n";
-//        return;
-//    }
-
-
-
-
 
     int retVal = connectServer();
     switch (retVal) {
@@ -160,7 +146,7 @@ void Client::requestNewFortune()
         errorCode.setValue(CONNECTION_FAILURE);
         break;
 
-    default:
+    case NO_ERROR:
         // no error
         std::cout << "connected.\n";
         Client::readFortune();
@@ -196,17 +182,13 @@ void Client::readFortune()
         // check packet header
         // pBuff - buff is an int equal to 2*sizeof(long int) in this case
         // send request to server
-        // qint64 QIODevice::write ( const char * data, qint64 maxSize )
-        //if (send(tcpSocket, buff, pBuff - buff, 0) == -1)
         if (::send(sockfd, buff, pBuff - buff, 0) == -1)
             throw std::string("Error Requesting");
         //std::cout << "write to server: " << write_tmp << std::endl;
 
         long int packet;
         long int type;
-        //--------------------------------------
-        //std::cout << "********************************\n";
-        //--------------------------------------
+
         // recv and pass data to packet
         if (!receive(sockfd, packet))
             throw std::string("Error receiving packet.\n");
@@ -218,7 +200,8 @@ void Client::readFortune()
         if (packet != ClientCodes::EInfo)
             throw std::string("Bad packet.\n");
 
-        long int size;
+        //long int size;
+        unsigned long int size;
 
         // recv and pass data to size, thus get the size of future data?
         if (!receive(sockfd, size))
@@ -248,18 +231,20 @@ void Client::readFortune()
         // identify the channels with DOFs?
         std::vector<MarkerChannel> MarkerChannels;
         std::vector<BodyChannel> BodyChannels;
-        int FrameChannel;
+        int FrameChannel = 0;
 
         for (iInfo = info.begin(); iInfo != info.end(); iInfo++) {
             // Extract the channel type
             // looking for the FIRST '<' in each info string
 
-            int openBrace = iInfo->find('<');
+            //int openBrace = iInfo->find('<');
+            unsigned int openBrace = iInfo->find('<');
             // if no '<' found
             if (openBrace == iInfo->npos)
                 throw std::string("Bad channel ID");
 
-            int closeBrace = iInfo->find('>');
+            //int closeBrace = iInfo->find('>');
+            unsigned int closeBrace = iInfo->find('>');
             if (closeBrace == iInfo->npos)
                 throw std::string("Bad channel ID");
 
@@ -272,7 +257,8 @@ void Client::readFortune()
             // the Name is the substring from the begin to the first '<'
             std::string Name = iInfo->substr(0, openBrace);
             // rfind return the LAST occurrence of the specified char
-            int space = Name.rfind(' ');
+            //int space = Name.rfind(' ');
+            unsigned int space = Name.rfind(' ');
             if (space != Name.npos)
                 Name.resize(space);
 
@@ -358,9 +344,7 @@ void Client::readFortune()
             * ((long int *) pBuff) = ClientCodes::ERequest;
             pBuff += sizeof(long int);
 
-            // if(send(tcpSocket, buff, pBuff - buff, 0) == -1)
-            // qint64 QIODevice::write ( const char * data, qint64 maxSize )
-            //if (send(tcpSocket, buff, pBuff - buff, 0) == -1)
+
             if (::send(sockfd, buff, pBuff - buff, 0) == -1)
                 throw std::string("Error Requesting");
 
@@ -668,10 +652,10 @@ int Client::connectServer() {
     //----- loading the serverip and port from labels
     QByteArray a1 = this->hostLineEdit->text().toAscii();
     const char* ServerIP = a1.data();
-    //const char* ServerIP = "localhost";
+
     QByteArray a2 = this->portLineEdit->text().toAscii();
     const char* PORT = a2.data();
-    //const char* PORT = "3490";
+
 
     std::cout << "Connecting to " << ServerIP << ":" << PORT << "...";
     // hard code the server's IP and port
@@ -708,7 +692,7 @@ int Client::connectServer() {
     // if still not connected after looping
     if (pAddrinfo == NULL) {
         std::cout << "Failed to connect to server.\n";
-        return 2;
+        return CONNECTION_FAILURE;
     }
 
     //std::cout << "Connected.\n";
@@ -719,7 +703,7 @@ int Client::connectServer() {
     freeaddrinfo(servinfo);
 
 
-    return 0;
+    return NO_ERROR;
 }
 
 

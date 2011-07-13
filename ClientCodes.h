@@ -73,12 +73,14 @@ public:
 class MarkerChannel
 {
 public:
-	std::string Name;
+        //std::string Name;
 
 	int X;
 	int Y;
 	int Z;
 	int O;
+
+        std::string Name;
 
 	MarkerChannel(std::string & a_rName) : X(-1), Y(-1), Z(-1), O(-1), Name(a_rName) {}
 
@@ -128,14 +130,17 @@ public:
 class BodyChannel
 {
 public:
-	std::string Name;
+        //std::string Name;
 
-	int TX;
-	int TY;
-	int TZ;
+
 	int RX;
 	int RY;
 	int RZ;
+        int TX;
+        int TY;
+        int TZ;
+
+        std::string Name;
 
 	BodyChannel(std::string & a_rName) : RX(-1), RY(-1), RZ(-1), TX(-1), TY(-1), TZ(-1), Name(a_rName) {}
 

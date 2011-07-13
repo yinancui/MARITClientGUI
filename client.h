@@ -66,8 +66,7 @@ public:
 
 private slots:
     void requestNewFortune();
-    void readFortune();
-    //int readFortune();
+    void readFortune();    
     void displayError(int errorCode);
     void enableconnectButton();
 

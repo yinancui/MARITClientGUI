@@ -16,7 +16,8 @@ class ErrorCode : public QObject
 {
     Q_OBJECT
 public:
-    explicit ErrorCode(QObject *parent = 0) {m_value = NO_ERROR;}
+    //explicit ErrorCode(QObject *parent = 0) {m_value = NO_ERROR;}
+    explicit ErrorCode() {m_value = NO_ERROR;}
     int value() const { return m_value; }
     void setValue(int value);// { m_value = value;}
 
