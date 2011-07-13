@@ -11,6 +11,7 @@
 #include <algorithm>
 #include "errorcode.h"
 
+//----------------
 
 Client::Client(QWidget *parent) :
     QDialog(parent),
