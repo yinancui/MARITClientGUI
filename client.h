@@ -25,6 +25,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "errorcode.h"
+
 
 
 
@@ -66,7 +68,7 @@ private slots:
     void requestNewFortune();
     void readFortune();
     //int readFortune();
-    //void displayError(QAbstractSocket::SocketError socketError);
+    void displayError(int errorCode);
     void enableconnectButton();
 
     void dummy();
@@ -80,22 +82,16 @@ private:
     QLabel *statusLabel;
     QTextEdit* textEdit;
     QTextBrowser* textBrowser;
-    QPushButton *connectButton;
 
+    QPushButton *connectButton;
     QPushButton *quitButton;
+
     QDialogButtonBox *buttonBox;
 
-    //QTcpSocket *tcpSocket;
-
-    //QString currentFortune;
-    //quint16 blockSize;
-
-    //QString data_show;
 
 
-    //------------- Unix socket
+    //------------- Unix socket-----------------------
     int sockfd, numbytes;
-    //char buf[MAXDATASIZE];
     struct addrinfo hints, *servinfo, *pAddrinfo;
     char sIPv6[INET6_ADDRSTRLEN];
 
@@ -112,6 +108,9 @@ private:
 
     //console* myconsole;
 
+    //--------error handling-----------
+    ErrorCode errorCode;
+
 
 
 //    // vtk -------------------------------
@@ -122,5 +121,7 @@ private:
 //    vtkSmartPointer<vtkRenderer> renderer;
     //QProcess* proc;
 };
+
+
 
 #endif // CLIENT_H

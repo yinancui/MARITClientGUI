@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "errorcode.h"
 
 
 Client::Client(QWidget *parent) :
@@ -27,8 +28,7 @@ Client::Client(QWidget *parent) :
     hostLabel->setBuddy(hostLineEdit);
     portLabel->setBuddy(portLineEdit);
 
-    statusLabel = new QLabel(tr("This examples requires that you run the "
-                                "Fortune Server example as well."));
+    statusLabel = new QLabel(tr("Display the real time data here"));
     this->textEdit = new QTextEdit(tr("switched to textEdit."));
     this->textEdit->setReadOnly(true);
     this->textBrowser = new QTextBrowser; //("switched to textBrowser.");
@@ -47,24 +47,24 @@ Client::Client(QWidget *parent) :
 
 
     //tcpSocket = new QTcpSocket(this);
-
     //   myconsole = new console;
 
-    //    // vtk ----------------------------
-    //    QString filename = "/home/marrk/coding/qtproj/qtcp/ClientGUI/cow.obj";
-    //    vtkWidget = new QVTKWidget(this, QFlag(0));
-    //    //-------------------------------------
+
 
     connect(hostLineEdit, SIGNAL(textChanged(const QString &)),this, SLOT(enableconnectButton()));
     connect(portLineEdit, SIGNAL(textChanged(const QString &)),this, SLOT(enableconnectButton()));
     connect(connectButton, SIGNAL(clicked()),this, SLOT(requestNewFortune()));
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
 
+    //errorCode.setValue(CONNECTION_FAILURE);
+    connect(&errorCode, SIGNAL(valueChanged(int)), this, SLOT(displayError(int)));
+
     //connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     //connect(tcpSocket, SIGNAL(connected()), this, SLOT(readFortune()));
     //connect(tcpSocket, SIGNAL(connected()), this, SLOT(dummy()));
     //connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(dummy()));
 
+    //----------- open new console-------------
     //connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),this, SLOT(displayError(QAbstractSocket::SocketError)));
     //connect(this->connectButton, SIGNAL(clicked()), myconsole, SLOT(startprocess()));
     //connect(tcpSocket, SIGNAL(readyRead()), myconsole, SLOT(startprocess()));
@@ -75,7 +75,7 @@ Client::Client(QWidget *parent) :
     mainLayout->addWidget(hostLineEdit, 0, 1);
     mainLayout->addWidget(portLabel, 1, 0);
     mainLayout->addWidget(portLineEdit, 1, 1);
-    //mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
+    mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
     //mainLayout->addWidget(this->textEdit, 2, 0, 1, 2);
     //mainLayout->addWidget(this->textBrowser, 2, 0, 1, 2);
     //mainLayout->addWidget(this->vtkWidget, 2, 0, 1, 2);
@@ -83,6 +83,10 @@ Client::Client(QWidget *parent) :
     setLayout(mainLayout);
 
 
+    //    // vtk ----------------------------
+    //    QString filename = "/home/marrk/coding/qtproj/qtcp/ClientGUI/cow.obj";
+    //    vtkWidget = new QVTKWidget(this, QFlag(0));
+    //    //-------------------------------------
     //    // vtk render ----------------------------------------
     //    reader = vtkSmartPointer<vtkOBJReader>::New();
     //    reader->SetFileName(filename.toStdString().c_str());
@@ -127,16 +131,41 @@ void Client::requestNewFortune()
 {
     //std::cout << "Connecting to server...";
     connectButton->setEnabled(false);
-    //    blockSize = 0;
-    //    tcpSocket->abort();
-    //    tcpSocket->connectToHost(hostLineEdit->text(),
-    //                             portLineEdit->text().toInt());
-    if (Client::connectServer() != 0) {
-        std::cout << "failed to connect to server, try again.\n";
-        return;
+
+//    std::cout << errorCode.value() << std::endl;
+//    errorCode.setValue(SERVERINFO_FAILURE);
+//    std::cout << errorCode.value() << std::endl;
+
+//    if (Client::connectServer() != 0) {
+//        std::cout << "failed to connect to server, try again.\n";
+//        return;
+//    }
+
+
+
+
+
+    int retVal = connectServer();
+    switch (retVal) {
+
+    case SOCKET_CREATION_FAILURE:
+        errorCode.setValue(SOCKET_CREATION_FAILURE);
+        break;
+
+    case SERVERINFO_FAILURE:
+        errorCode.setValue(SERVERINFO_FAILURE);
+       break;
+
+    case CONNECTION_FAILURE:
+        errorCode.setValue(CONNECTION_FAILURE);
+        break;
+
+    default:
+        // no error
+        std::cout << "connected.\n";
+        Client::readFortune();
     }
-    std::cout << "connected.\n";
-    Client::readFortune();
+
 }
 
 
@@ -369,13 +398,7 @@ void Client::readFortune()
             // get the timestamp
             timestamp = data[FrameChannel];
 
-
-
-            /*
-                                                       * Get channels corresponding to markers
-                                                       *
-                                                       */
-
+            //Get channels corresponding to markers
             std::vector< MarkerChannel >::iterator iMarker;
             std::vector< MarkerData >::iterator iMarkerData;
 
@@ -394,12 +417,10 @@ void Client::readFortune()
 
 
 
-            /*
-                                                                     * Get the channels corresponding to bodies
-                                                                     * the world is Z-up
-                                                                     * the translational values are in millimeters
-                                                                     * the rotational values are in radians
-                                                                     */
+//            * Get the channels corresponding to bodies
+//            * the world is Z-up
+//            * the translational values are in millimeters
+//            * the rotational values are in radians
 
             std::vector<BodyChannel>::iterator iBody;
             std::vector<BodyData>::iterator iBodyData;
@@ -412,7 +433,9 @@ void Client::readFortune()
                 iBodyData->TY = data[iBody->TY];
                 iBodyData->TZ = data[iBody->TZ];
 
-//                The channel data is in the angle-axis form.
+
+
+//                        The channel data is in the angle-axis form.
 //                        The following converts this to a quaternion.
 //                        =============================================================
 //                        An angle-axis is vector, the direction of which is the axis
@@ -420,7 +443,8 @@ void Client::readFortune()
 //                        rotation in radians.
 //                        =============================================================
 
-                        double len, tmp;
+
+                double len, tmp;
 
                 len = sqrt(	data[iBody->RX] * data[iBody->RX] +
                                 data[iBody->RY] * data[iBody->RY] +
@@ -531,31 +555,39 @@ void Client::readFortune()
 
 
 
-//void Client::displayError(QAbstractSocket::SocketError socketError)
-//{
-//    switch (socketError) {
-//    case QAbstractSocket::RemoteHostClosedError:
-//        break;
-//    case QAbstractSocket::HostNotFoundError:
-//        QMessageBox::information(this, tr("Fortune Client"),
-//                                 tr("The host was not found. Please check the "
-//                                    "host name and port settings."));
-//        break;
-//    case QAbstractSocket::ConnectionRefusedError:
-//        QMessageBox::information(this, tr("Fortune Client"),
-//                                 tr("The connection was refused by the peer. "
-//                                    "Make sure the fortune server is running, "
-//                                    "and check that the host name and port "
-//                                    "settings are correct."));
-//        break;
-//    default:
-//        QMessageBox::information(this, tr("Fortune Client"),
-//                                 tr("The following error occurred: %1.")
-//                                 .arg(tcpSocket->errorString()));
-//    }
+void Client::displayError(int errorVal)
+{
+    switch (errorVal) {
 
-//    connectButton->setEnabled(true);
-//}
+    case CONNECTION_FAILURE: {
+        QMessageBox::information(this, tr("ClientGUI"),
+                                 tr("Failed to connect, check your input."));
+        std::cout << "Frome error handling CONNECTIION_FAILURE.\n";
+        errorCode.setValue(NO_ERROR);
+        break;
+    }
+
+    case SOCKET_CREATION_FAILURE:
+        QMessageBox::information(this, tr("ClientGUI"),
+                                 tr("Failed to create socekt, try again."));
+        errorCode.setValue(NO_ERROR);
+        break;
+
+    case SERVERINFO_FAILURE:
+        std::cout << "From server info failure.\n";
+        QMessageBox::information(this, tr("ClientGUI"),
+                                 tr("Failed to get server information, check your input."));
+        errorCode.setValue(NO_ERROR);
+        break;
+
+    case NO_ERROR:
+        // do nothing
+        break;
+
+    }
+
+    connectButton->setEnabled(true);
+}
 
 
 
@@ -645,26 +677,34 @@ int Client::connectServer() {
     // hard code the server's IP and port
     if ((::getaddrinfo(ServerIP, PORT, &hints, &servinfo)) != 0) {
         std::cout << "Failed to get server info.\n";
-        return 1;
+        return SERVERINFO_FAILURE;
     }
 
-    for (pAddrinfo = servinfo; pAddrinfo != NULL; pAddrinfo = pAddrinfo->ai_next) {
+   // for (pAddrinfo = servinfo; pAddrinfo != NULL; pAddrinfo = pAddrinfo->ai_next) {
         // create client's socket
+
+        pAddrinfo = servinfo;
         if ((sockfd = socket(pAddrinfo->ai_family, pAddrinfo->ai_socktype,
                              pAddrinfo->ai_protocol)) == -1) {
             std::cout << "Failed to create client socket.\n";
-            continue;
+            //errorCode.setValue(SOCKET_CREATION_FAILURE);
+            //continue;
+            //break;
+            return SOCKET_CREATION_FAILURE;
         }
         // connect to server
 
         if (::connect(sockfd, pAddrinfo->ai_addr, pAddrinfo->ai_addrlen) == -1) {
             ::close(sockfd);
             std::cout << "Failed to connect to server.\n";
-            continue;
+            //errorCode.setValue(CONNECTION_FAILURE);
+            //continue;
+            //break;
+            return CONNECTION_FAILURE;
         }
         //usleep(0.01 * M);
-        break;
-    }
+     //   break;
+   // }
     // if still not connected after looping
     if (pAddrinfo == NULL) {
         std::cout << "Failed to connect to server.\n";
@@ -681,3 +721,6 @@ int Client::connectServer() {
 
     return 0;
 }
+
+
+
