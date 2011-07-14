@@ -1,33 +1,17 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+//------Qt includes--------
 #include <QDialog>
-//#include <QTcpSocket>
-#include "console.h"
-#include "ClientCodes.h"
 
-//------ includes from Unix socket
-#include <sys/socket.h>
-#include <cassert>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <functional>
+//------POSIX socket includes--------
 #include <limits>
-#include <math.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 
+//--------local includes---------
+#include "ClientCodes.h"
 #include "errorcode.h"
-
-
 
 
 // vtk includes ------------------------
@@ -40,6 +24,23 @@
 //#include <vtkRenderWindow.h>
 //---------------------------------------
 
+//------ not needed----
+//#include <sys/socket.h>
+//#include <cassert>
+//#include <string>
+//#include <vector>
+//#include <algorithm>
+//#include <functional>
+//#include <math.h>
+//#include <unistd.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <errno.h>
+//#include <sys/types.h>
+//#include <netinet/in.h>
+//#include <sys/socket.h>
+
+
 namespace Ui {
     class Client;
 }
@@ -49,7 +50,6 @@ class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
-//class QTcpSocket;
 class QTextEdit;
 class QTextBrowser;
 class QProcess;
@@ -104,13 +104,14 @@ private:
     void* get_in_addr(struct sockaddr* sa);
 
 
-
-    //console* myconsole;
-
     //--------error handling-----------
     ErrorCode errorCode;
 
 
+
+
+
+    //console* myconsole;
 
 //    // vtk -------------------------------
 //    QVTKWidget* vtkWidget;
@@ -119,6 +120,8 @@ private:
 //    vtkSmartPointer<vtkActor> actor;
 //    vtkSmartPointer<vtkRenderer> renderer;
     //QProcess* proc;
+
+
 };
 
 

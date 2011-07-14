@@ -1,17 +1,25 @@
+#include <QtGui>
+
 #include "client.h"
 #include "ui_client.h"
-#include <QtGui>
-//#include <QtNetwork>
+
 #include <iostream>
-#include <unistd.h>
-#include <stdlib.h>
-#include "ClientCodes.h"
-#include <string>
-#include <vector>
 #include <algorithm>
-#include "errorcode.h"
+
+//#include "ClientCodes.h"
+//#include "errorcode.h"
+//#include <unistd.h>
+//#include <stdlib.h>
+//#include <string>
+//#include <vector>
 
 //----------------
+
+
+
+
+
+
 
 Client::Client(QWidget *parent) :
     QDialog(parent),
@@ -147,7 +155,7 @@ void Client::requestNewFortune()
         errorCode.setValue(CONNECTION_FAILURE);
         break;
 
-    case NO_ERROR:
+    case SUCCESS:
         // no error
         std::cout << "connected.\n";
         Client::readFortune();
@@ -548,24 +556,24 @@ void Client::displayError(int errorVal)
         QMessageBox::information(this, tr("ClientGUI"),
                                  tr("Failed to connect, check your input."));
         std::cout << "Frome error handling CONNECTIION_FAILURE.\n";
-        errorCode.setValue(NO_ERROR);
+        errorCode.setValue(SUCCESS);
         break;
     }
 
     case SOCKET_CREATION_FAILURE:
         QMessageBox::information(this, tr("ClientGUI"),
                                  tr("Failed to create socekt, try again."));
-        errorCode.setValue(NO_ERROR);
+        errorCode.setValue(SUCCESS);
         break;
 
     case SERVERINFO_FAILURE:
         std::cout << "From server info failure.\n";
         QMessageBox::information(this, tr("ClientGUI"),
                                  tr("Failed to get server information, check your input."));
-        errorCode.setValue(NO_ERROR);
+        errorCode.setValue(SUCCESS);
         break;
 
-    case NO_ERROR:
+    case SUCCESS:
         // do nothing
         break;
 
@@ -704,7 +712,7 @@ int Client::connectServer() {
     freeaddrinfo(servinfo);
 
 
-    return NO_ERROR;
+    return SUCCESS;
 }
 
 
