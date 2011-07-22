@@ -1,2 +1,3 @@
-This is the source code for MARIT's controller clients.
-test aldskasg.
+MARIT controller client
+Built in Qt4, the client receives Vicon's data using 
+POSIX sockets and generate controller commands.
