@@ -15,12 +15,14 @@ SOURCES += main.cpp\
         client.cpp \
     console.cpp \
     ClientCodes.cpp \
-    errorcode.cpp
+    errorcode.cpp \
+    port.cpp
 
 HEADERS  += client.h \
     console.h \
     ClientCodes.h \
-    errorcode.h
+    errorcode.h \
+    port.h
 
 FORMS    += client.ui
 

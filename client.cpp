@@ -1,11 +1,11 @@
+//---- Qt includes -----
 #include <QtGui>
-
+//----- local includes ------
 #include "client.h"
 #include "ui_client.h"
-
+//----- other includes --------
 #include <iostream>
 #include <algorithm>
-
 //#include "ClientCodes.h"
 //#include "errorcode.h"
 //#include <unistd.h>
@@ -13,11 +13,69 @@
 //#include <string>
 //#include <vector>
 
-//----------------
 
 
-bool bHoverflag = FALSE;
 
+//------------------------- globals ------------------------------
+bool bHoverflag = FALSE;    // set to true when control is desired
+
+//-------- 6DOF data ------------
+float g_fX;
+float g_fY;
+float g_fZ;
+float g_fRoll;
+float g_fPitch;
+float g_fYaw;
+
+//--------- ref trajectory -----------
+float g_fRollRef;
+float g_fPitchRef;
+float g_fYawRef;
+float g_fXRef;
+float g_fYRef;
+float g_fZRef;
+
+//---------- attitude conroller param --------------------------
+// errors
+float eAphi = 0, eA1phi = 0, eA2phi = 0;
+float eAtheta = 0, eA1theta = 0, eA2theta = 0;
+float eApsi = 0, eA1psi = 0, eA2psi = 0;
+float eAz = 0, eA1z = 0, eA2z = 0;
+// PID param
+float kAp_phi	= 3.1;
+float kAi_phi	= 0.01; // old = 0.03
+float kAd_phi	= 0;
+float kA1phi = kAp_phi + kAi_phi + kAd_phi;
+float kA2phi = -kAp_phi - 2 * kAd_phi;
+float kA3phi = kAd_phi;
+
+float kAp_theta = 3;
+float kAi_theta = 0.08;
+float kAd_theta = 0;
+float kA1theta = kAp_theta + kAi_theta + kAd_theta;
+float kA2theta = -kAp_theta - 2 * kAd_theta;
+float kA3theta = kAd_theta;
+
+float kAp_psi = 3;
+float kAi_psi = 0.08;
+float kAd_psi = 0;
+float kA1psi = kAp_psi + kAi_psi + kAd_psi;
+float kA2psi = -kAp_psi - 2 * kAd_psi;
+float kA3psi = kAd_psi;
+
+float kAp_z = 0.01;
+float kAi_z = 0.0002;
+float kAd_z = 0;
+float kA1z = kAp_z + kAi_z + kAd_z;
+float kA2z = -kAp_z - 2 * kAd_z;
+float kA3z = kAd_z;
+
+// output commands
+float roll_a = 0, delta_roll_a = 0;	// 'a' for attitude controller
+float pitch_a = 0, delta_pitch_a = 0;
+float yaw_a = 0, delta_yaw_a = 0;
+float coll_a = 0, delta_coll_a = 0;
+float coll_at = 0;
 
 
 
@@ -53,9 +111,7 @@ Client::Client(QWidget *parent) :
 
     quitButton = new QPushButton(tr("Quit"));
 
-//    buttonBox = new QDialogButtonBox;
-//    buttonBox->addButton(connectButton, QDialogButtonBox::ActionRole);
-//    buttonBox->addButton(quitButton, QDialogButtonBox::RejectRole);
+
 
     //---------------------set signals---------------------------------
 
@@ -82,14 +138,6 @@ Client::Client(QWidget *parent) :
 
 
     //------------ set layouts ------------------------------------------------
-//    QGridLayout *mainLayout = new QGridLayout;
-//    mainLayout->addWidget(hostLabel, 0, 0);
-//    mainLayout->addWidget(hostLineEdit, 0, 1);
-//    mainLayout->addWidget(portLabel, 1, 0);
-//    mainLayout->addWidget(portLineEdit, 1, 1);
-//    mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
-//    mainLayout->addWidget(buttonBox, 3, 0, 1, 2);
-//    setLayout(mainLayout);
     QGroupBox* buttonGroup = new QGroupBox;
     QVBoxLayout* vbox = new QVBoxLayout;
     vbox->addWidget(connectButton);

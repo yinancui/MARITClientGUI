@@ -81,38 +81,32 @@ private:
     QLabel *statusLabel;
     QTextEdit* textEdit;
     QTextBrowser* textBrowser;
-
     QPushButton *connectButton;
     QPushButton *quitButton;
-
     QDialogButtonBox *buttonBox;
-
-
 
     //------------- Unix socket-----------------------
     int sockfd, numbytes;
     struct addrinfo hints, *servinfo, *pAddrinfo;
     char sIPv6[INET6_ADDRSTRLEN];
-
     bool receive(int Socket, char* pBuffer, int BufferSize);
     bool receive(int Socket, long int & Val);
     bool receive(int Socket, unsigned long int & Val);
     bool receive(int Socket, double &Val);
-
     //---------- connect to server routine
     int connectServer();
     void* get_in_addr(struct sockaddr* sa);
-
-
     //--------error handling-----------
     ErrorCode errorCode;
 
-
+    //------------- controllers --------------------
+    void hoverAtt(int duration, float fRollRef, float fPitchRef,
+                  float fYawRef, float fZRef);
+    void hoverPos();
 
 
 
     //console* myconsole;
-
 //    // vtk -------------------------------
 //    QVTKWidget* vtkWidget;
 //    vtkSmartPointer<vtkOBJReader> reader;
