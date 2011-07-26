@@ -16,6 +16,8 @@
 //----------------
 
 
+bool bHoverflag = FALSE;
+
 
 
 
@@ -27,6 +29,7 @@ Client::Client(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    //------------ declare widgets -----------------------------
     hostLabel = new QLabel(tr("&Server name:"));
     portLabel = new QLabel(tr("S&erver port:"));
 
@@ -37,10 +40,10 @@ Client::Client(QWidget *parent) :
     hostLabel->setBuddy(hostLineEdit);
     portLabel->setBuddy(portLineEdit);
 
-    statusLabel = new QLabel(tr("Display the real time data here"));
-    this->textEdit = new QTextEdit(tr("switched to textEdit."));
-    this->textEdit->setReadOnly(true);
-    this->textBrowser = new QTextBrowser; //("switched to textBrowser.");
+    statusLabel = new QLabel(tr("Display info here"));
+//    this->textEdit = new QTextEdit(tr("switched to textEdit."));
+//    this->textEdit->setReadOnly(true);
+//    this->textBrowser = new QTextBrowser; //("switched to textBrowser.");
 
 
     connectButton = new QPushButton(tr("Connect"));
@@ -50,15 +53,14 @@ Client::Client(QWidget *parent) :
 
     quitButton = new QPushButton(tr("Quit"));
 
-    buttonBox = new QDialogButtonBox;
-    buttonBox->addButton(connectButton, QDialogButtonBox::ActionRole);
-    buttonBox->addButton(quitButton, QDialogButtonBox::RejectRole);
+//    buttonBox = new QDialogButtonBox;
+//    buttonBox->addButton(connectButton, QDialogButtonBox::ActionRole);
+//    buttonBox->addButton(quitButton, QDialogButtonBox::RejectRole);
 
+    //---------------------set signals---------------------------------
 
     //tcpSocket = new QTcpSocket(this);
     //   myconsole = new console;
-
-
 
     connect(hostLineEdit, SIGNAL(textChanged(const QString &)),this, SLOT(enableconnectButton()));
     connect(portLineEdit, SIGNAL(textChanged(const QString &)),this, SLOT(enableconnectButton()));
@@ -79,16 +81,33 @@ Client::Client(QWidget *parent) :
     //connect(tcpSocket, SIGNAL(readyRead()), myconsole, SLOT(startprocess()));
 
 
+    //------------ set layouts ------------------------------------------------
+//    QGridLayout *mainLayout = new QGridLayout;
+//    mainLayout->addWidget(hostLabel, 0, 0);
+//    mainLayout->addWidget(hostLineEdit, 0, 1);
+//    mainLayout->addWidget(portLabel, 1, 0);
+//    mainLayout->addWidget(portLineEdit, 1, 1);
+//    mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
+//    mainLayout->addWidget(buttonBox, 3, 0, 1, 2);
+//    setLayout(mainLayout);
+    QGroupBox* buttonGroup = new QGroupBox;
+    QVBoxLayout* vbox = new QVBoxLayout;
+    vbox->addWidget(connectButton);
+    vbox->addWidget(quitButton);
+    buttonGroup->setLayout(vbox);
+
+    QGroupBox* addrGroup = new QGroupBox;
+    QGridLayout* addrGrid = new QGridLayout;
+    addrGrid->addWidget(hostLabel, 0, 0);
+    addrGrid->addWidget(hostLineEdit, 0, 1);
+    addrGrid->addWidget(portLabel, 1, 0);
+    addrGrid->addWidget(portLineEdit, 1, 1);
+    addrGroup->setLayout(addrGrid);
+
     QGridLayout *mainLayout = new QGridLayout;
-    mainLayout->addWidget(hostLabel, 0, 0);
-    mainLayout->addWidget(hostLineEdit, 0, 1);
-    mainLayout->addWidget(portLabel, 1, 0);
-    mainLayout->addWidget(portLineEdit, 1, 1);
-    mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
-    //mainLayout->addWidget(this->textEdit, 2, 0, 1, 2);
-    //mainLayout->addWidget(this->textBrowser, 2, 0, 1, 2);
-    //mainLayout->addWidget(this->vtkWidget, 2, 0, 1, 2);
-    mainLayout->addWidget(buttonBox, 3, 0, 1, 2);
+    mainLayout->addWidget(statusLabel, 0, 0);
+    mainLayout->addWidget(addrGroup, 1, 0);
+    mainLayout->addWidget(buttonGroup, 1, 1);
     setLayout(mainLayout);
 
 
