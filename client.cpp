@@ -3,6 +3,7 @@
 //----- local includes ------
 #include "client.h"
 #include "ui_client.h"
+#include "port.h"
 //----- other includes --------
 #include <iostream>
 #include <algorithm>
@@ -18,6 +19,7 @@
 
 //------------------------- globals ------------------------------
 bool bHoverflag = FALSE;    // set to true when control is desired
+int g_iDuration = 0;        // flight duration
 
 //-------- 6DOF data ------------
 float g_fX;
@@ -110,6 +112,7 @@ Client::Client(QWidget *parent) :
     connectButton->setEnabled(true);
 
     quitButton = new QPushButton(tr("Quit"));
+    testHoverButton = new QPushButton(tr("TestHover"));
 
 
 
@@ -125,6 +128,9 @@ Client::Client(QWidget *parent) :
 
     //errorCode.setValue(CONNECTION_FAILURE);
     connect(&errorCode, SIGNAL(valueChanged(int)), this, SLOT(displayError(int)));
+
+    //----------test hover button
+    connect(testHoverButton, SIGNAL(clicked()), this, SLOT(dummyHover()));
 
     //connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     //connect(tcpSocket, SIGNAL(connected()), this, SLOT(readFortune()));
@@ -142,6 +148,7 @@ Client::Client(QWidget *parent) :
     QVBoxLayout* vbox = new QVBoxLayout;
     vbox->addWidget(connectButton);
     vbox->addWidget(quitButton);
+    vbox->addWidget(testHoverButton);
     buttonGroup->setLayout(vbox);
 
     QGroupBox* addrGroup = new QGroupBox;
@@ -477,13 +484,17 @@ void Client::readFortune()
 
 
 
+            //---------------------------------------------------
+            //--------------TODO: only get the info of DF6
+            //---------------------------------------------------
+
 //            * Get the channels corresponding to bodies
 //            * the world is Z-up
 //            * the translational values are in millimeters
 //            * the rotational values are in radians
 
             std::vector<BodyChannel>::iterator iBody;
-            std::vector<BodyData>::iterator iBodyData;
+            std::vector<BodyData>::iterator iBodyData;                       
 
             for (       iBody = BodyChannels.begin(),
                         iBodyData = bodyPositions.begin();
@@ -584,6 +595,18 @@ void Client::readFortune()
                           << "Pitch: "   << iBodyData->EulerY    << std::endl
                           << "Yaw: "     << iBodyData->EulerZ    << std::endl;
 
+                //--------------- passing realtime data to globals
+                g_fX = iBodyData->TX;
+                g_fY = iBodyData->TY;
+                g_fZ = iBodyData->TZ;
+                g_fRoll = iBodyData->EulerX;
+                g_fPitch = iBodyData->EulerY;
+                g_fYaw = iBodyData->EulerZ;
+
+                if (bHoverflag) {
+                    hoverAtt(20, 0, 0, 0, 100);
+                }
+
 
             }
             //std::cout << "--------------Frame: " << timestamp << std::endl;
@@ -614,7 +637,7 @@ void Client::readFortune()
 
 
 
-
+//---------------------GUI error handling-------------------------------------
 void Client::displayError(int errorVal)
 {
     switch (errorVal) {
@@ -648,7 +671,7 @@ void Client::displayError(int errorVal)
 
     connectButton->setEnabled(true);
 }
-
+//-----------------------------------------------------------------------------
 
 
 void Client::enableconnectButton(){
@@ -661,8 +684,7 @@ void Client::enableconnectButton(){
 
 
 
-// RTE SDK
-
+//------------------- RTE SDK modified recv methods------------------
 bool Client::receive(int Socket, char* pBuffer, int BufferSize) {
 
     //std::cout << "in receive call.\n";
@@ -679,7 +701,6 @@ bool Client::receive(int Socket, char* pBuffer, int BufferSize) {
             return false;
         }
         p += result;
-
     }
     //std::cout << "got something.\n";
     return true;
@@ -700,13 +721,13 @@ bool Client::receive(int Socket, double &Val)
 {return receive(Socket, (char*)& Val, sizeof(Val));}
 
 
-//---------- test connted()
-void Client::dummy() {
-    std::cout << "Connected to server.\n";
-    //std::cout << "Ready to read.\n";
-    connectButton->setEnabled(true);
-}
-
+////---------- test connted()
+//void Client::dummy() {
+//    std::cout << "Connected to server.\n";
+//    //std::cout << "Ready to read.\n";
+//    connectButton->setEnabled(true);
+//}
+//------------------------------------------------------------------
 
 
 
@@ -718,7 +739,7 @@ void* Client::get_in_addr(struct sockaddr* sa) {
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-//-------------------------
+
 int Client::connectServer() {
 
     ::memset(&hints, 0, sizeof hints);
@@ -784,3 +805,111 @@ int Client::connectServer() {
 
 
 
+
+
+//----------------- att hovering controller --------------------------
+void Client::hoverAtt(int duration, float fRollRef, float fPitchRef, float fYawRef, float fZRef) {
+    float testColl = -0.45;
+    g_iDuration = duration;
+    g_fRollRef = fRollRef;
+    g_fPitchRef = fPitchRef;
+    g_fYawRef = fYawRef;
+    g_fZRef = fZRef;
+
+    int retVal;
+    if ((retVal = initPort()) < 0) {
+        std::cout << "Failed to initialize serial port.\n";
+        return;
+    }
+    //------ print control param-------------------------
+    std::cout << "########### Attitude controller ##########\n"
+            << "        ref roll: " << g_fRollRef << std::endl
+            << "        ref pitch: " << g_fPitchRef << std::endl
+            << "        ref yaw: " << g_fYawRef << std::endl
+            << "        ref height: " << g_fZRef << std::endl
+            << "##########################################\n";
+
+    //---------- begin control loop -------------------------
+    int timer = 0;
+    for (timer = 0; timer < g_iDuration; timer++) {
+        std::cout << "	Roll: "     << g_fRoll  << std::endl; //X axis rotation value(roll)
+        std::cout << "	Pitch: "    << g_fPitch << std::endl; //Y axis rotation value(pitch)
+        std::cout << "	Yaw: "      << g_fYaw   << std::endl; //Z axis rotation value(yaw)
+        std::cout << "	X value: "  << g_fX     << std::endl;
+        std::cout << "	Y value: "  << g_fY     << std::endl;
+        std::cout << "	Z value: "  << g_fZ     << std::endl;
+
+        //---------- generating commands
+        eA2phi = eA1phi;
+        eA1phi = eAphi;
+        eAphi = g_fRollRef - g_fRoll;
+        delta_roll_a = kA1phi * eAphi + kA2phi * eA1phi
+                + kA3phi * eA2phi;
+        roll_a += delta_roll_a;
+        if (roll_a > 0.3)
+            roll_a = 0.3;
+        else if (roll_a < -0.3)
+            roll_a = -0.3;
+
+        /* use OL to roll here	*/
+        //roll_o = 0.2 * sin(timera * 2 * PI / 50);
+
+        eA2theta = eA1theta;
+        eA1theta = eAtheta;
+        eAtheta = g_fPitchRef - g_fPitch;
+        delta_pitch_a = kA1theta * eAtheta + kA2theta * eA1theta
+                + kA3theta * eA2theta;
+        pitch_a += delta_pitch_a;
+        if (pitch_a > 0.3)
+            pitch_a = 0.3;
+        else if (pitch_a < -0.3)
+            pitch_a = -0.3;
+        // OL ch2 pitch control
+        //ch2_o = 0.15 * sin(timera*2*PI/50);
+        // ch2_o = -0.1;
+
+        eA2psi = eA1psi;
+        eA1psi = eApsi;
+        eApsi = g_fYawRef - g_fYaw;
+        if (eApsi > 0.2)
+            eApsi = 0.2;
+        else if (eApsi < -0.2)
+            eApsi = -0.2;
+        //cout << "yaw error: " << eApsi << endl;
+        delta_yaw_a = kA1psi * eApsi + kA2psi * eA1psi
+                + kA3psi * eA2psi;
+        yaw_a += delta_yaw_a;
+        if (yaw_a > 0.3)
+            yaw_a = 0.3;
+        else if (yaw_a < -0.3)
+            yaw_a = -0.3;
+        // OL SID for yaw
+        //ch4_o = -0.1 * sin(timera*2*PI/25);
+        // ch4_o = -0.25;
+
+        /*------------collective, z----------------*/
+//        //z_temp = (z_ref / duration) * ((timera / 10) + 1);
+//        eA2z = eA1z;
+//        eA1z = eAz;
+//        eAz = g_fZRef - g_fZ;
+//        //eAz = z_temp - rZ;
+//        delta_coll_a = kA1z * eAz + kA2z * eA1z + kA3z * eA2z;
+//        //delta_coll_a = delta_z * M;	//??????????
+//        coll_at += delta_coll_a;
+//        coll_a = coll_at + coll_h;
+//        if (coll_a > 0.2)
+//            coll_a = 0.2;
+//        else if (coll_a < -0.5)
+//            coll_a = -0.5;
+
+        sendToPC2RC(roll_a, pitch_a, testColl, yaw_a);
+        //usleep(0.003 * M);
+    }
+    closePort();
+
+}
+
+
+void Client::dummyHover() {
+    hoverAtt(20, 0, 0, 0, 100);
+}

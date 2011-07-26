@@ -10,7 +10,8 @@
 #include <arpa/inet.h>
 
 //--------local includes---------
-#include "ClientCodes.h"
+//#include "ClientCodes.h"
+#include "Data.h"
 #include "errorcode.h"
 
 
@@ -70,7 +71,7 @@ private slots:
     void displayError(int errorCode);
     void enableconnectButton();
 
-    void dummy();
+    void dummyHover();
 
 private:
     Ui::Client *ui;
@@ -79,11 +80,12 @@ private:
     QLineEdit *hostLineEdit;
     QLineEdit *portLineEdit;
     QLabel *statusLabel;
-    QTextEdit* textEdit;
-    QTextBrowser* textBrowser;
+    //QTextEdit* textEdit;
+    //QTextBrowser* textBrowser;
     QPushButton *connectButton;
     QPushButton *quitButton;
-    QDialogButtonBox *buttonBox;
+    QPushButton* testHoverButton;
+    //QDialogButtonBox *buttonBox;
 
     //------------- Unix socket-----------------------
     int sockfd, numbytes;

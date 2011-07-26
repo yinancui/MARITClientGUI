@@ -61,7 +61,7 @@ void closePort() {
     std::cout << "old port settings recovered.\n";
     cl = close(fd);
     if (cl != -1)
-        std::cout << "port cloesd.\n";
+        std::cout << "port closed.\n";
 }
 
 

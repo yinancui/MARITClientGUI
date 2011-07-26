@@ -77,9 +77,7 @@
     </valuemap>
     <value key="ProjectExplorer.BuildConfiguration.BuildStepListCount" type="int">2</value>
     <value key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment" type="bool">false</value>
-    <valuelist key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges" type="QVariantList">
-     <value type="QString">LD_LIBRARY_PATH=/usr/local/lib/vtk-5.6</value>
-    </valuelist>
+    <valuelist key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges" type="QVariantList"/>
     <value key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName" type="QString">Desktop Qt 4.7.3 for GCC (Qt SDK) Release</value>
     <value key="ProjectExplorer.ProjectConfiguration.DisplayName" type="QString"></value>
     <value key="ProjectExplorer.ProjectConfiguration.Id" type="QString">Qt4ProjectManager.Qt4BuildConfiguration</value>

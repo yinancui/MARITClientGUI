@@ -13,20 +13,18 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         client.cpp \
-    console.cpp \
-    ClientCodes.cpp \
     errorcode.cpp \
-    port.cpp
+    port.cpp \
+    Data.cpp
 
 HEADERS  += client.h \
-    console.h \
-    ClientCodes.h \
     errorcode.h \
-    port.h
+    port.h \
+    Data.h
 
 FORMS    += client.ui
 
 
-LIBS    += -L/usr/local/lib/vtk-5.6 -lvtkCommon -lvtksys -lQVTK -lvtkQtChart -lvtkViews -lvtkWidgets -lvtkInfovis -lvtkRendering -lvtkGraphics -lvtkImaging -lvtkIO -lvtkFiltering -lvtklibxml2 -lvtkDICOMParser -lvtkpng -lvtkpng -lvtktiff -lvtkzlib -lvtkjpeg -lvtkalglib -lvtkexpat -lvtkverdict -lvtkmetaio -lvtkNetCDF -lvtksqlite -lvtkexoIIc -lvtkftgl -lvtkfreetype -lvtkHybrid
+#LIBS    += -L/usr/local/lib/vtk-5.6 -lvtkCommon -lvtksys -lQVTK -lvtkQtChart -lvtkViews -lvtkWidgets -lvtkInfovis -lvtkRendering -lvtkGraphics -lvtkImaging -lvtkIO -lvtkFiltering -lvtklibxml2 -lvtkDICOMParser -lvtkpng -lvtkpng -lvtktiff -lvtkzlib -lvtkjpeg -lvtkalglib -lvtkexpat -lvtkverdict -lvtkmetaio -lvtkNetCDF -lvtksqlite -lvtkexoIIc -lvtkftgl -lvtkfreetype -lvtkHybrid
 
-INCLUDEPATH += /usr/local/include/vtk-5.6
+#INCLUDEPATH += /usr/local/include/vtk-5.6
