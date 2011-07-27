@@ -102,7 +102,7 @@ private:
     ErrorCode errorCode;
 
     //------------- controllers --------------------
-    void hoverAtt(int duration, float fRollRef, float fPitchRef,
+    void hoverAtt(float fRollRef, float fPitchRef,
                   float fYawRef, float fZRef);
     void hoverPos();
 

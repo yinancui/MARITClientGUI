@@ -92,11 +92,11 @@ void sendToPC2RC(float roll_arg, float pitch_arg,
     int collective = normalized_to_pc2rc2(collective_arg,
             0, PC2RC2_COLL_SLOPE);
 //
-    cout << "	-----control commands---------\n";
-    cout << "	roll_input: " << roll << endl;
-    cout << "	pitch_input: " << pitch << endl;
-    cout << "	yaw_input: " << yaw << endl;
-    cout << "	collective_input: " << collective << endl;
+    cout << "-----control commands------\n";
+    cout << "roll_input: " << roll << endl;
+    cout << "pitch_input: " << pitch << endl;
+    cout << "yaw_input: " << yaw << endl;
+    cout << "collective_input: " << collective << endl;
 
     buf[0] = '~';
     buf[1] = '~';

@@ -244,7 +244,15 @@ void Client::readFortune()
 {
     std::cout << "Now begin receiving...\n";
 
+
+    //---------- request for data block ---------------
     try {
+
+        //---------init serial port-----------------
+        int retSe;
+        if ((retSe = initPort()) < 0)
+            throw std::string("Failed to initializ serial port");
+
 
         std::vector<std::string> info;
         const int bufferSize = 2040;
@@ -417,7 +425,7 @@ void Client::readFortune()
         // set loop count
         for (i = 0; i < 1000; i++) {
             // print frame # at the beginning of the loop
-            std::cout << "--------------Frame: " << timestamp << std::endl;
+            std::cout << "--------------Frame: " << timestamp << "------------------" << std::endl;
             // use the same routine as when getting channel info
 
             pBuff = buff;
@@ -494,128 +502,132 @@ void Client::readFortune()
 //            * the rotational values are in radians
 
             std::vector<BodyChannel>::iterator iBody;
-            std::vector<BodyData>::iterator iBodyData;                       
+            std::vector<BodyData>::iterator iBodyData;
+            //----
+            std::string df6 = "DF6:DF6";
 
             for (       iBody = BodyChannels.begin(),
                         iBodyData = bodyPositions.begin();
                         iBody != BodyChannels.end(); iBody++, iBodyData++) {
 
-                iBodyData->TX = data[iBody->TX];
-                iBodyData->TY = data[iBody->TY];
-                iBodyData->TZ = data[iBody->TZ];
+                if (iBody->Name == df6) {
+                    iBodyData->TX = data[iBody->TX];
+                    iBodyData->TY = data[iBody->TY];
+                    iBodyData->TZ = data[iBody->TZ];
 
 
 
-//                        The channel data is in the angle-axis form.
-//                        The following converts this to a quaternion.
-//                        =============================================================
-//                        An angle-axis is vector, the direction of which is the axis
-//                        of rotation and the length of which is the amount of
-//                        rotation in radians.
-//                        =============================================================
+                    //                        The channel data is in the angle-axis form.
+                    //                        The following converts this to a quaternion.
+                    //                        =============================================================
+                    //                        An angle-axis is vector, the direction of which is the axis
+                    //                        of rotation and the length of which is the amount of
+                    //                        rotation in radians.
+                    //                        =============================================================
 
 
-                double len, tmp;
+                    double len, tmp;
 
-                len = sqrt(	data[iBody->RX] * data[iBody->RX] +
+                    len = sqrt(	data[iBody->RX] * data[iBody->RX] +
                                 data[iBody->RY] * data[iBody->RY] +
                                 data[iBody->RZ] * data[iBody->RZ]);
 
-                iBodyData->QW = cos(len / 2.0);
-                tmp = sin(len / 2.0);
-                if (len < 1e-10)
-                {
-                    iBodyData->QX = data[iBody->RX];
-                    iBodyData->QY = data[iBody->RY];
-                    iBodyData->QZ = data[iBody->RZ];
-                }
-                else
-                {
-                    iBodyData->QX = data[iBody->RX] * tmp/len;
-                    iBodyData->QY = data[iBody->RY] * tmp/len;
-                    iBodyData->QZ = data[iBody->RZ] * tmp/len;
-                }
+                    iBodyData->QW = cos(len / 2.0);
+                    tmp = sin(len / 2.0);
+                    if (len < 1e-10)
+                    {
+                        iBodyData->QX = data[iBody->RX];
+                        iBodyData->QY = data[iBody->RY];
+                        iBodyData->QZ = data[iBody->RZ];
+                    }
+                    else
+                    {
+                        iBodyData->QX = data[iBody->RX] * tmp/len;
+                        iBodyData->QY = data[iBody->RY] * tmp/len;
+                        iBodyData->QZ = data[iBody->RZ] * tmp/len;
+                    }
 
-                //	The following converts angle-axis to a rotation matrix.
+                    //	The following converts angle-axis to a rotation matrix.
 
-                double c, s, x, y, z;
+                    double c, s, x, y, z;
 
-                if (len < 1e-15)
-                {
-                    iBodyData->GlobalRotation[0][0] = iBodyData->GlobalRotation[1][1] = iBodyData->GlobalRotation[2][2] = 1.0;
-                    iBodyData->GlobalRotation[0][1] = iBodyData->GlobalRotation[0][2] = iBodyData->GlobalRotation[1][0] =
-                            iBodyData->GlobalRotation[1][2]	= iBodyData->GlobalRotation[2][0] = iBodyData->GlobalRotation[2][1] = 0.0;
-                }
-                else
-                {
-                    x = data[iBody->RX]/len;
-                    y = data[iBody->RY]/len;
-                    z = data[iBody->RZ]/len;
+                    if (len < 1e-15)
+                    {
+                        iBodyData->GlobalRotation[0][0] = iBodyData->GlobalRotation[1][1] = iBodyData->GlobalRotation[2][2] = 1.0;
+                        iBodyData->GlobalRotation[0][1] = iBodyData->GlobalRotation[0][2] = iBodyData->GlobalRotation[1][0] =
+                                iBodyData->GlobalRotation[1][2]	= iBodyData->GlobalRotation[2][0] = iBodyData->GlobalRotation[2][1] = 0.0;
+                    }
+                    else
+                    {
+                        x = data[iBody->RX]/len;
+                        y = data[iBody->RY]/len;
+                        z = data[iBody->RZ]/len;
 
-                    c = cos(len);
-                    s = sin(len);
+                        c = cos(len);
+                        s = sin(len);
 
-                    iBodyData->GlobalRotation[0][0] = c + (1-c)*x*x;
-                    iBodyData->GlobalRotation[0][1] =     (1-c)*x*y + s*(-z);
-                    iBodyData->GlobalRotation[0][2] =     (1-c)*x*z + s*y;
-                    iBodyData->GlobalRotation[1][0] =     (1-c)*y*x + s*z;
-                    iBodyData->GlobalRotation[1][1] = c + (1-c)*y*y;
-                    iBodyData->GlobalRotation[1][2] =     (1-c)*y*z + s*(-x);
-                    iBodyData->GlobalRotation[2][0] =     (1-c)*z*x + s*(-y);
-                    iBodyData->GlobalRotation[2][1] =     (1-c)*z*y + s*x;
-                    iBodyData->GlobalRotation[2][2] = c + (1-c)*z*z;
-                }
+                        iBodyData->GlobalRotation[0][0] = c + (1-c)*x*x;
+                        iBodyData->GlobalRotation[0][1] =     (1-c)*x*y + s*(-z);
+                        iBodyData->GlobalRotation[0][2] =     (1-c)*x*z + s*y;
+                        iBodyData->GlobalRotation[1][0] =     (1-c)*y*x + s*z;
+                        iBodyData->GlobalRotation[1][1] = c + (1-c)*y*y;
+                        iBodyData->GlobalRotation[1][2] =     (1-c)*y*z + s*(-x);
+                        iBodyData->GlobalRotation[2][0] =     (1-c)*z*x + s*(-y);
+                        iBodyData->GlobalRotation[2][1] =     (1-c)*z*y + s*x;
+                        iBodyData->GlobalRotation[2][2] = c + (1-c)*z*z;
+                    }
 
-                // now convert rotation matrix to nasty Euler angles (yuk)
-                // you could convert direct from angle-axis to Euler if you wish
+                    // now convert rotation matrix to nasty Euler angles (yuk)
+                    // you could convert direct from angle-axis to Euler if you wish
 
-                //	'Look out for angle-flips, Paul...'
-                //  Algorithm: GraphicsGems II - Matrix Techniques VII.1 p 320
-                assert(fabs(iBodyData->GlobalRotation[0][2]) <= 1);
-                iBodyData->EulerY = asin(-iBodyData->GlobalRotation[2][0]);
+                    //	'Look out for angle-flips, Paul...'
+                    //  Algorithm: GraphicsGems II - Matrix Techniques VII.1 p 320
+                    assert(fabs(iBodyData->GlobalRotation[0][2]) <= 1);
+                    iBodyData->EulerY = asin(-iBodyData->GlobalRotation[2][0]);
 
-                if(fabs(cos(y)) >
-                        std::numeric_limits<double>::epsilon() ) 	// cos(y) != 0 Gimbal-Lock
-                {
-                    iBodyData->EulerX = atan2(iBodyData->GlobalRotation[2][1], iBodyData->GlobalRotation[2][2]);
-                    iBodyData->EulerZ = atan2(iBodyData->GlobalRotation[1][0], iBodyData->GlobalRotation[0][0]);
-                }
-                else
-                {
-                    iBodyData->EulerZ = 0;
-                    iBodyData->EulerX = atan2(iBodyData->GlobalRotation[0][1], iBodyData->GlobalRotation[1][1]);
-                }
+                    if(fabs(cos(y)) >
+                            std::numeric_limits<double>::epsilon() ) 	// cos(y) != 0 Gimbal-Lock
+                    {
+                        iBodyData->EulerX = atan2(iBodyData->GlobalRotation[2][1], iBodyData->GlobalRotation[2][2]);
+                        iBodyData->EulerZ = atan2(iBodyData->GlobalRotation[1][0], iBodyData->GlobalRotation[0][0]);
+                    }
+                    else
+                    {
+                        iBodyData->EulerZ = 0;
+                        iBodyData->EulerX = atan2(iBodyData->GlobalRotation[0][1], iBodyData->GlobalRotation[1][1]);
+                    }
 
-                std::cout << "BodyName: " << iBody->Name        << std::endl
-                          << "X: "        << iBodyData->TX      << std::endl
-                          << "Y: "        << iBodyData->TY      << std::endl
-                          << "Z: "        << iBodyData->TZ      << std::endl;
+                    std::cout << "BodyName: " << iBody->Name        << std::endl
+                              << "X: "        << iBodyData->TX      << std::endl
+                              << "Y: "        << iBodyData->TY      << std::endl
+                              << "Z: "        << iBodyData->TZ      << std::endl;
 
-                std::cout << "Roll: "    << iBodyData->EulerX    << std::endl
-                          << "Pitch: "   << iBodyData->EulerY    << std::endl
-                          << "Yaw: "     << iBodyData->EulerZ    << std::endl;
+                    std::cout << "Roll: "    << iBodyData->EulerX    << std::endl
+                              << "Pitch: "   << iBodyData->EulerY    << std::endl
+                              << "Yaw: "     << iBodyData->EulerZ    << std::endl;
 
-                //--------------- passing realtime data to globals
-                g_fX = iBodyData->TX;
-                g_fY = iBodyData->TY;
-                g_fZ = iBodyData->TZ;
-                g_fRoll = iBodyData->EulerX;
-                g_fPitch = iBodyData->EulerY;
-                g_fYaw = iBodyData->EulerZ;
+                    //--------------- passing realtime data to globals
+                    g_fX = iBodyData->TX;
+                    g_fY = iBodyData->TY;
+                    g_fZ = iBodyData->TZ;
+                    g_fRoll = iBodyData->EulerX;
+                    g_fPitch = iBodyData->EulerY;
+                    g_fYaw = iBodyData->EulerZ;
 
-                if (bHoverflag) {
-                    hoverAtt(20, 0, 0, 0, 100);
-                }
+                    //---------- run att controller if flag was set
+                    bHoverflag = TRUE;
+                    if (bHoverflag) {
+
+                        hoverAtt(0, 0, 0, 100);
+                    }
+                    bHoverflag = FALSE;
 
 
-            }
-            //std::cout << "--------------Frame: " << timestamp << std::endl;
 
 
-
+                } // out of if == df6 loop
+            } // out of for loop
         }
-
-
     }
     catch (const std::string& rMsg) {
         if (rMsg.empty())
@@ -624,7 +636,10 @@ void Client::readFortune()
             std::cout << rMsg.c_str() << std::endl;
     }
 
+
+    //--------done with this connection-------------
     std::cout << "Done.\n";
+    closePort(); // close serial port
     connectButton->setEnabled(true);    
 }
 
@@ -808,36 +823,36 @@ int Client::connectServer() {
 
 
 //----------------- att hovering controller --------------------------
-void Client::hoverAtt(int duration, float fRollRef, float fPitchRef, float fYawRef, float fZRef) {
+void Client::hoverAtt(float fRollRef, float fPitchRef, float fYawRef, float fZRef) {
     float testColl = -0.45;
-    g_iDuration = duration;
+    //g_iDuration = duration;
     g_fRollRef = fRollRef;
     g_fPitchRef = fPitchRef;
     g_fYawRef = fYawRef;
     g_fZRef = fZRef;
 
-    int retVal;
-    if ((retVal = initPort()) < 0) {
-        std::cout << "Failed to initialize serial port.\n";
-        return;
-    }
+//    int retVal;
+//    if ((retVal = initPort()) < 0) {
+//        std::cout << "Failed to initialize serial port.\n";
+//        return;
+//    }
     //------ print control param-------------------------
     std::cout << "########### Attitude controller ##########\n"
-            << "        ref roll: " << g_fRollRef << std::endl
-            << "        ref pitch: " << g_fPitchRef << std::endl
-            << "        ref yaw: " << g_fYawRef << std::endl
-            << "        ref height: " << g_fZRef << std::endl
-            << "##########################################\n";
+            << "ref roll: " << g_fRollRef << std::endl
+            << "ref pitch: " << g_fPitchRef << std::endl
+            << "ref yaw: " << g_fYawRef << std::endl
+            << "ref height: " << g_fZRef << std::endl;
+            //<< "##########################################\n";
 
     //---------- begin control loop -------------------------
-    int timer = 0;
-    for (timer = 0; timer < g_iDuration; timer++) {
-        std::cout << "	Roll: "     << g_fRoll  << std::endl; //X axis rotation value(roll)
-        std::cout << "	Pitch: "    << g_fPitch << std::endl; //Y axis rotation value(pitch)
-        std::cout << "	Yaw: "      << g_fYaw   << std::endl; //Z axis rotation value(yaw)
-        std::cout << "	X value: "  << g_fX     << std::endl;
-        std::cout << "	Y value: "  << g_fY     << std::endl;
-        std::cout << "	Z value: "  << g_fZ     << std::endl;
+    //int timer = 0;
+    //for (timer = 0; timer < g_iDuration; timer++) {
+//        std::cout << "	Roll: "     << g_fRoll  << std::endl; //X axis rotation value(roll)
+//        std::cout << "	Pitch: "    << g_fPitch << std::endl; //Y axis rotation value(pitch)
+//        std::cout << "	Yaw: "      << g_fYaw   << std::endl; //Z axis rotation value(yaw)
+//        std::cout << "	X value: "  << g_fX     << std::endl;
+//        std::cout << "	Y value: "  << g_fY     << std::endl;
+//        std::cout << "	Z value: "  << g_fZ     << std::endl;
 
         //---------- generating commands
         eA2phi = eA1phi;
@@ -902,14 +917,19 @@ void Client::hoverAtt(int duration, float fRollRef, float fPitchRef, float fYawR
 //        else if (coll_a < -0.5)
 //            coll_a = -0.5;
 
+//        std::cout << "Sending control commands:\n"
+//                  << "ch1: " << roll_a << std::endl
+//                  << "ch2: " << pitch_a << std::endl
+//                  << "ch3: " << testColl << std::endl
+//                  << "ch4: " << yaw_a << std::endl;
         sendToPC2RC(roll_a, pitch_a, testColl, yaw_a);
         //usleep(0.003 * M);
-    }
-    closePort();
+    //}
+    //closePort();
 
 }
 
 
 void Client::dummyHover() {
-    hoverAtt(20, 0, 0, 0, 100);
+    hoverAtt(0, 0, 0, 100);
 }
