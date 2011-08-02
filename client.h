@@ -66,11 +66,10 @@ public:
     ~Client();
 
 private slots:
-    void requestNewFortune();
-    void readFortune();    
+    void getFrame();
+    void mainLoop();
     void displayError(int errorCode);
     void enableconnectButton();
-
     void dummyHover();
 
 private:
@@ -116,6 +115,8 @@ private:
 //    vtkSmartPointer<vtkActor> actor;
 //    vtkSmartPointer<vtkRenderer> renderer;
     //QProcess* proc;
+
+
 
 
 };

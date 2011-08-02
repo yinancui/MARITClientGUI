@@ -82,66 +82,37 @@ float coll_at = 0;
 
 
 
-
+//--------------------- ctor & dtor --------------------------
 Client::Client(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Client)
 {
     ui->setupUi(this);
 
-    //------------ declare widgets -----------------------------
+    //------------ declare widgets --------------
     hostLabel = new QLabel(tr("&Server name:"));
     portLabel = new QLabel(tr("S&erver port:"));
-
     hostLineEdit = new QLineEdit("192.168.15.100");
     portLineEdit = new QLineEdit("800");
     portLineEdit->setValidator(new QIntValidator(1, 65535, this));
-
     hostLabel->setBuddy(hostLineEdit);
     portLabel->setBuddy(portLineEdit);
-
     statusLabel = new QLabel(tr("Display info here"));
-//    this->textEdit = new QTextEdit(tr("switched to textEdit."));
-//    this->textEdit->setReadOnly(true);
-//    this->textBrowser = new QTextBrowser; //("switched to textBrowser.");
-
-
     connectButton = new QPushButton(tr("Connect"));
     connectButton->setDefault(true);
     //connectButton->setEnabled(false);
     connectButton->setEnabled(true);
-
     quitButton = new QPushButton(tr("Quit"));
     testHoverButton = new QPushButton(tr("TestHover"));
 
 
-
     //---------------------set signals---------------------------------
-
-    //tcpSocket = new QTcpSocket(this);
-    //   myconsole = new console;
-
     connect(hostLineEdit, SIGNAL(textChanged(const QString &)),this, SLOT(enableconnectButton()));
     connect(portLineEdit, SIGNAL(textChanged(const QString &)),this, SLOT(enableconnectButton()));
-    connect(connectButton, SIGNAL(clicked()),this, SLOT(requestNewFortune()));
+    connect(connectButton, SIGNAL(clicked()),this, SLOT(getFrame()));
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
-
-    //errorCode.setValue(CONNECTION_FAILURE);
     connect(&errorCode, SIGNAL(valueChanged(int)), this, SLOT(displayError(int)));
-
-    //----------test hover button
     connect(testHoverButton, SIGNAL(clicked()), this, SLOT(dummyHover()));
-
-    //connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
-    //connect(tcpSocket, SIGNAL(connected()), this, SLOT(readFortune()));
-    //connect(tcpSocket, SIGNAL(connected()), this, SLOT(dummy()));
-    //connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(dummy()));
-
-    //----------- open new console-------------
-    //connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),this, SLOT(displayError(QAbstractSocket::SocketError)));
-    //connect(this->connectButton, SIGNAL(clicked()), myconsole, SLOT(startprocess()));
-    //connect(tcpSocket, SIGNAL(readyRead()), myconsole, SLOT(startprocess()));
-
 
     //------------ set layouts ------------------------------------------------
     QGroupBox* buttonGroup = new QGroupBox;
@@ -195,10 +166,6 @@ Client::Client(QWidget *parent) :
     //    renderer->Render();
     //    //-------------------------------------------------
 
-
-
-
-
     setWindowTitle(tr("MARIT ClientGUI"));
     portLineEdit->setFocus();
     std::cout << "out of ctor.\n";
@@ -210,9 +177,25 @@ Client::~Client()
 }
 
 
-void Client::requestNewFortune()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//---------------- slot for getting frames without hovering --------------------
+void Client::getFrame()
 {
     connectButton->setEnabled(false);
+    bHoverflag = false; // make sure this does not trigger hovering
 
     int retVal = connectServer();
     switch (retVal) {
@@ -232,18 +215,51 @@ void Client::requestNewFortune()
     case SUCCESS:
         // no error
         std::cout << "connected.\n";
-        Client::readFortune();
+        Client::mainLoop();
     }
 
+}
+
+//------------ slot for testhover -----------------
+void Client::dummyHover() {
+    //hoverAtt(0, 0, 0, 100);
+    connectButton->setEnabled(false);
+    bHoverflag = true;  // trigger hovering with this
+
+    int retVal = connectServer();
+    switch (retVal) {
+
+    case SOCKET_CREATION_FAILURE:
+        errorCode.setValue(SOCKET_CREATION_FAILURE);
+        break;
+
+    case SERVERINFO_FAILURE:
+        errorCode.setValue(SERVERINFO_FAILURE);
+       break;
+
+    case CONNECTION_FAILURE:
+        errorCode.setValue(CONNECTION_FAILURE);
+        break;
+
+    case SUCCESS:
+        // no error
+        std::cout << "connected.\n";
+        // run the loops and control
+        Client::mainLoop();
+    }
 }
 
 
 
 
-void Client::readFortune()
+
+
+
+
+//----------- the main loop, getting frames and control --------------------
+void Client::mainLoop()
 {
     std::cout << "Now begin receiving...\n";
-
 
     //---------- request for data block ---------------
     try {
@@ -614,15 +630,11 @@ void Client::readFortune()
                     g_fPitch = iBodyData->EulerY;
                     g_fYaw = iBodyData->EulerZ;
 
-                    //---------- run att controller if flag was set
-                    bHoverflag = TRUE;
+                    //---------- run att controller if flag was set to true
                     if (bHoverflag) {
 
                         hoverAtt(0, 0, 0, 100);
                     }
-                    bHoverflag = FALSE;
-
-
 
 
                 } // out of if == df6 loop
@@ -736,13 +748,6 @@ bool Client::receive(int Socket, double &Val)
 {return receive(Socket, (char*)& Val, sizeof(Val));}
 
 
-////---------- test connted()
-//void Client::dummy() {
-//    std::cout << "Connected to server.\n";
-//    //std::cout << "Ready to read.\n";
-//    connectButton->setEnabled(true);
-//}
-//------------------------------------------------------------------
 
 
 
@@ -763,57 +768,41 @@ int Client::connectServer() {
 
     //----- loading the serverip and port from labels
     QByteArray a1 = this->hostLineEdit->text().toAscii();
-    const char* ServerIP = a1.data();
-
+    const char* ServerIP = a1.data();    
     QByteArray a2 = this->portLineEdit->text().toAscii();
-    const char* PORT = a2.data();
-
+    const char* PORT = a2.data();    
 
     std::cout << "Connecting to " << ServerIP << ":" << PORT << "...";
     // hard code the server's IP and port
     if ((::getaddrinfo(ServerIP, PORT, &hints, &servinfo)) != 0) {
         std::cout << "Failed to get server info.\n";
         return SERVERINFO_FAILURE;
+    }    
+
+    pAddrinfo = servinfo;
+    if ((sockfd = socket(pAddrinfo->ai_family, pAddrinfo->ai_socktype,
+                         pAddrinfo->ai_protocol)) == -1) {
+        std::cout << "Failed to create client socket.\n";
+        return SOCKET_CREATION_FAILURE;
     }
 
-   // for (pAddrinfo = servinfo; pAddrinfo != NULL; pAddrinfo = pAddrinfo->ai_next) {
-        // create client's socket
 
-        pAddrinfo = servinfo;
-        if ((sockfd = socket(pAddrinfo->ai_family, pAddrinfo->ai_socktype,
-                             pAddrinfo->ai_protocol)) == -1) {
-            std::cout << "Failed to create client socket.\n";
-            //errorCode.setValue(SOCKET_CREATION_FAILURE);
-            //continue;
-            //break;
-            return SOCKET_CREATION_FAILURE;
-        }
-        // connect to server
-
-        if (::connect(sockfd, pAddrinfo->ai_addr, pAddrinfo->ai_addrlen) == -1) {
-            ::close(sockfd);
-            std::cout << "Failed to connect to server.\n";
-            //errorCode.setValue(CONNECTION_FAILURE);
-            //continue;
-            //break;
-            return CONNECTION_FAILURE;
-        }
-        //usleep(0.01 * M);
-     //   break;
-   // }
-    // if still not connected after looping
-    if (pAddrinfo == NULL) {
+    // connect to server
+    if (::connect(sockfd, pAddrinfo->ai_addr, pAddrinfo->ai_addrlen) == -1) {
+        ::close(sockfd);
         std::cout << "Failed to connect to server.\n";
         return CONNECTION_FAILURE;
     }
 
-    //std::cout << "Connected.\n";
+    // if still not connected after looping
+    if (pAddrinfo == NULL) {
+        std::cout << "Failed to connect to server.\n";
+        return CONNECTION_FAILURE;
+    }    
 
     inet_ntop(pAddrinfo->ai_family, get_in_addr((struct sockaddr *) pAddrinfo->ai_addr),
-              sIPv6, sizeof sIPv6);
-
+              sIPv6, sizeof sIPv6);    
     freeaddrinfo(servinfo);
-
 
     return SUCCESS;
 }
@@ -929,7 +918,3 @@ void Client::hoverAtt(float fRollRef, float fPitchRef, float fYawRef, float fZRe
 
 }
 
-
-void Client::dummyHover() {
-    hoverAtt(0, 0, 0, 100);
-}
