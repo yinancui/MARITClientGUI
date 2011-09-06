@@ -259,17 +259,10 @@ void Client::dummyHover() {
 //----------- the main loop, getting frames and control --------------------
 void Client::mainLoop()
 {
-    std::cout << "Now begin receiving...\n";
+    std::cout << "Now begin main loop...\n";
 
     //---------- request for data block ---------------
     try {
-
-        //---------init serial port-----------------
-        int retSe;
-        if ((retSe = initPort()) < 0)
-            throw std::string("Failed to initializ serial port");
-
-
         std::vector<std::string> info;
         const int bufferSize = 2040;
         char buff[bufferSize];
@@ -279,20 +272,27 @@ void Client::mainLoop()
         // request channel info
         pBuff = buff;
         // save EInfo into buff thru pBuff
-        *((long int*) pBuff) = ClientCodes::EInfo;
-        // and move pointer to next available position in buff
-        pBuff += sizeof(long int);
+        *((long int*) pBuff) = ClientCodes::EInfo;      // store EPacket value first, (long int*)pBuff will cast
+                                                        // pBuff to a long int pointer, so EInfo can be stored as a whole
 
-        *((long int*) pBuff) = ClientCodes::ERequest;
+        pBuff += sizeof(long int);    // move the pointer so the stored does not get covered be next action
+
+        *((long int*) pBuff) = ClientCodes::ERequest;   // store EType value
         pBuff += sizeof(long int);
 
         // check packet header
-        // pBuff - buff is an int equal to 2*sizeof(long int) in this case
-        // send request to server
+        // pBuff - buff is an int equal to 2*sizeof(long int) in this case (EPacket + EType)
+        // send request to server, only the first 8 bytes (16 in 64 WIN) are sent
+        // The message sent should be "10" in char*, each digit takes 4 bytes (8 in 64 WIN) ("EInfoERequest")
         if (::send(sockfd, buff, pBuff - buff, 0) == -1)
             throw std::string("Error Requesting");
         //std::cout << "write to server: " << write_tmp << std::endl;
 
+
+
+        // TODO: read the overide recv functions
+        //------------------------------------------------------------------------
+        // check packet header sent, now recv response from server
         long int packet;
         long int type;
 
@@ -328,11 +328,15 @@ void Client::mainLoop()
             if (!receive(sockfd, c, s))
                 throw std::string();
             p += s;
-            *p = 0;
+            *p = 0;     // put ascii Null (0) to the end of char sequence
             *iInfo = std::string(c);
         }
+        //-------------------------------------------------------------------
 
-        //----------------------------
+
+
+
+        //------------------------------------------------------------------------
         //--------- Parse info --------
         // the info packets contain channel names.
         // identify the channels with DOFs?
@@ -438,7 +442,10 @@ void Client::mainLoop()
         bodyPositions.resize(BodyChannels.size());
 
 
-        // set loop count
+        //---------------------------------------------------------------------------
+        //-------------- this is where the actual main loop begins ------------------
+        //---------------------------------------------------------------------------
+
         for (i = 0; i < 1000; i++) {
             // print frame # at the beginning of the loop
             std::cout << "--------------Frame: " << timestamp << "------------------" << std::endl;
@@ -509,7 +516,7 @@ void Client::mainLoop()
 
 
             //---------------------------------------------------
-            //--------------TODO: only get the info of DF6
+            //-------------- only get the info of DF6
             //---------------------------------------------------
 
 //            * Get the channels corresponding to bodies
@@ -531,19 +538,15 @@ void Client::mainLoop()
                     iBodyData->TY = data[iBody->TY];
                     iBodyData->TZ = data[iBody->TZ];
 
-
-
-                    //                        The channel data is in the angle-axis form.
-                    //                        The following converts this to a quaternion.
-                    //                        =============================================================
-                    //                        An angle-axis is vector, the direction of which is the axis
-                    //                        of rotation and the length of which is the amount of
-                    //                        rotation in radians.
-                    //                        =============================================================
-
+                    // The channel data is in the angle-axis form.
+                    // The following converts this to a quaternion.
+                    // =============================================================
+                    // An angle-axis is vector, the direction of which is the axis
+                    // of rotation and the length of which is the amount of
+                    // rotation in radians.
+                    // =============================================================
 
                     double len, tmp;
-
                     len = sqrt(	data[iBody->RX] * data[iBody->RX] +
                                 data[iBody->RY] * data[iBody->RY] +
                                 data[iBody->RZ] * data[iBody->RZ]);
@@ -569,9 +572,16 @@ void Client::mainLoop()
 
                     if (len < 1e-15)
                     {
-                        iBodyData->GlobalRotation[0][0] = iBodyData->GlobalRotation[1][1] = iBodyData->GlobalRotation[2][2] = 1.0;
-                        iBodyData->GlobalRotation[0][1] = iBodyData->GlobalRotation[0][2] = iBodyData->GlobalRotation[1][0] =
-                                iBodyData->GlobalRotation[1][2]	= iBodyData->GlobalRotation[2][0] = iBodyData->GlobalRotation[2][1] = 0.0;
+                        iBodyData->GlobalRotation[0][0] =
+                                iBodyData->GlobalRotation[1][1] =
+                                iBodyData->GlobalRotation[2][2] = 1.0;
+
+                        iBodyData->GlobalRotation[0][1] =
+                                iBodyData->GlobalRotation[0][2] =
+                                iBodyData->GlobalRotation[1][0] =
+                                iBodyData->GlobalRotation[1][2]	=
+                                iBodyData->GlobalRotation[2][0] =
+                                iBodyData->GlobalRotation[2][1] = 0.0;
                     }
                     else
                     {
@@ -593,7 +603,7 @@ void Client::mainLoop()
                         iBodyData->GlobalRotation[2][2] = c + (1-c)*z*z;
                     }
 
-                    // now convert rotation matrix to nasty Euler angles (yuk)
+                    // now convert rotation matrix to Euler angles
                     // you could convert direct from angle-axis to Euler if you wish
 
                     //	'Look out for angle-flips, Paul...'
@@ -631,8 +641,11 @@ void Client::mainLoop()
                     g_fYaw = iBodyData->EulerZ;
 
                     //---------- run att controller if flag was set to true
-                    if (bHoverflag) {
-
+                    if (bHoverflag) {   // if hovering flag is true, init serial port and begin hovering
+                        //---------init serial port-----------------
+                        int retSe;
+                        if ((retSe = initPort()) < 0)
+                            throw std::string("Failed to initializ serial port");
                         hoverAtt(0, 0, 0, 100);
                     }
 
@@ -641,6 +654,7 @@ void Client::mainLoop()
             } // out of for loop
         }
     }
+
     catch (const std::string& rMsg) {
         if (rMsg.empty())
             std::cout << "Error!\n";
@@ -651,7 +665,7 @@ void Client::mainLoop()
 
     //--------done with this connection-------------
     std::cout << "Done.\n";
-    closePort(); // close serial port
+    closePort(); // close serial port, no matter it is opened or not?
     connectButton->setEnabled(true);    
 }
 
