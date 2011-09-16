@@ -225,6 +225,7 @@ void Client::dummyHover() {
     //hoverAtt(0, 0, 0, 100);
     connectButton->setEnabled(false);
     bHoverflag = true;  // trigger hovering with this
+    // FIXME: consider do the serial port init here
 
     int retVal = connectServer();
     switch (retVal) {
@@ -640,6 +641,11 @@ void Client::mainLoop()
                     g_fPitch = iBodyData->EulerY;
                     g_fYaw = iBodyData->EulerZ;
 
+
+// FIXME: if hover flag is set, init serial port at the beginning, restore and close it when hovering is done
+// if hover flag is not set, do not bother to set the serial port,
+// use a set flag for initPort, if not set, init port
+
                     //---------- run att controller if flag was set to true
                     if (bHoverflag) {   // if hovering flag is true, init serial port and begin hovering
                         //---------init serial port-----------------
@@ -931,4 +937,5 @@ void Client::hoverAtt(float fRollRef, float fPitchRef, float fYawRef, float fZRe
     //closePort();
 
 }
+
 
