@@ -18,7 +18,7 @@
 
 
 //------------------------- globals ------------------------------
-bool bHoverflag = FALSE;    // set to true when control is desired
+bool bHoverflag = FALSE;    // disable hovering when application is initialized
 int g_iDuration = 0;        // flight duration
 
 //-------- 6DOF data ------------
@@ -112,7 +112,7 @@ Client::Client(QWidget *parent) :
     connect(connectButton, SIGNAL(clicked()),this, SLOT(getFrame()));
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
     connect(&errorCode, SIGNAL(valueChanged(int)), this, SLOT(displayError(int)));
-    connect(testHoverButton, SIGNAL(clicked()), this, SLOT(dummyHover()));
+    connect(testHoverButton, SIGNAL(clicked()), this, SLOT(getFrameAndHover()));
 
     //------------ set layouts ------------------------------------------------
     QGroupBox* buttonGroup = new QGroupBox;
@@ -192,6 +192,7 @@ Client::~Client()
 
 
 //---------------- slot for getting frames without hovering --------------------
+// You got here by pressing the "Connect" button, no hovering
 void Client::getFrame()
 {
     connectButton->setEnabled(false);
@@ -221,11 +222,15 @@ void Client::getFrame()
 }
 
 //------------ slot for testhover -----------------
-void Client::dummyHover() {
+// You got here by pressing the "test hover" button, serial port will be initialized, hovering will be done
+void Client::getFrameAndHover() {
     //hoverAtt(0, 0, 0, 100);
     connectButton->setEnabled(false);
     bHoverflag = true;  // trigger hovering with this
     // FIXME: consider do the serial port init here
+    int retSe;
+    if ((retSe = initPort()) < 0)
+        throw std::string("Failed to initializ serial port");
 
     int retVal = connectServer();
     switch (retVal) {
@@ -446,12 +451,12 @@ void Client::mainLoop()
         //---------------------------------------------------------------------------
         //-------------- this is where the actual main loop begins ------------------
         //---------------------------------------------------------------------------
-
-        for (i = 0; i < 1000; i++) {
+        int loop_count = 500;
+        for (i = 0; i < loop_count; i++) {
             // print frame # at the beginning of the loop
             std::cout << "--------------Frame: " << timestamp << "------------------" << std::endl;
-            // use the same routine as when getting channel info
 
+            // use the same routine as when getting channel info
             pBuff = buff;
 
             * ((long int *) pBuff) = ClientCodes::EData;
@@ -624,6 +629,7 @@ void Client::mainLoop()
                         iBodyData->EulerX = atan2(iBodyData->GlobalRotation[0][1], iBodyData->GlobalRotation[1][1]);
                     }
 
+                    // print out the realtime 6DOF data
                     std::cout << "BodyName: " << iBody->Name        << std::endl
                               << "X: "        << iBodyData->TX      << std::endl
                               << "Y: "        << iBodyData->TY      << std::endl
@@ -642,16 +648,11 @@ void Client::mainLoop()
                     g_fYaw = iBodyData->EulerZ;
 
 
-// FIXME: if hover flag is set, init serial port at the beginning, restore and close it when hovering is done
-// if hover flag is not set, do not bother to set the serial port,
-// use a set flag for initPort, if not set, init port
-
-                    //---------- run att controller if flag was set to true
-                    if (bHoverflag) {   // if hovering flag is true, init serial port and begin hovering
-                        //---------init serial port-----------------
-                        int retSe;
-                        if ((retSe = initPort()) < 0)
-                            throw std::string("Failed to initializ serial port");
+                    // If hover flag is set, meaning you have reached here from "test hover" button,
+                    // serial port should have been initialized (in getFrameAndHover).
+                    // If hover flag is not set,meaning you have reached here from "Connect" button,
+                    // do not bother to set the serial port, and move on.
+                    if (bHoverflag) {
                         hoverAtt(0, 0, 0, 100);
                     }
 
@@ -668,10 +669,11 @@ void Client::mainLoop()
             std::cout << rMsg.c_str() << std::endl;
     }
 
-
+    // FIXME: the application crashes after running from shell, not from QtCreator
     //--------done with this connection-------------
     std::cout << "Done.\n";
-    closePort(); // close serial port, no matter it is opened or not?
+    bHoverflag = false; // make sure after each run, hovering is disabled
+    closePort();        // close serial port, no matter it is opened or not?
     connectButton->setEnabled(true);    
 }
 
@@ -830,28 +832,22 @@ int Client::connectServer() {
 
 
 
-
+// FIXME: any ways to speed up this algorithm?
 //----------------- att hovering controller --------------------------
 void Client::hoverAtt(float fRollRef, float fPitchRef, float fYawRef, float fZRef) {
-    float testColl = -0.45;
+    float testColl = -0.5;
     //g_iDuration = duration;
     g_fRollRef = fRollRef;
     g_fPitchRef = fPitchRef;
     g_fYawRef = fYawRef;
     g_fZRef = fZRef;
 
-//    int retVal;
-//    if ((retVal = initPort()) < 0) {
-//        std::cout << "Failed to initialize serial port.\n";
-//        return;
-//    }
     //------ print control param-------------------------
-    std::cout << "########### Attitude controller ##########\n"
-            << "ref roll: " << g_fRollRef << std::endl
-            << "ref pitch: " << g_fPitchRef << std::endl
-            << "ref yaw: " << g_fYawRef << std::endl
-            << "ref height: " << g_fZRef << std::endl;
-            //<< "##########################################\n";
+//    std::cout << "### Attitude controller ###\n"
+//            << "ref roll: " << g_fRollRef << std::endl
+//            << "ref pitch: " << g_fPitchRef << std::endl
+//            << "ref yaw: " << g_fYawRef << std::endl
+//            << "ref height: " << g_fZRef << std::endl;
 
     //---------- begin control loop -------------------------
     //int timer = 0;
@@ -931,7 +927,8 @@ void Client::hoverAtt(float fRollRef, float fPitchRef, float fYawRef, float fZRe
 //                  << "ch2: " << pitch_a << std::endl
 //                  << "ch3: " << testColl << std::endl
 //                  << "ch4: " << yaw_a << std::endl;
-        sendToPC2RC(roll_a, pitch_a, testColl, yaw_a);
+       sendToPC2RC(roll_a, pitch_a, testColl, yaw_a);
+        //sendToPC2RC(0, 0, -0.55, 0);
         //usleep(0.003 * M);
     //}
     //closePort();

@@ -70,7 +70,7 @@ private slots:
     void mainLoop();
     void displayError(int errorCode);
     void enableconnectButton();
-    void dummyHover();
+    void getFrameAndHover();
 
 private:
     Ui::Client *ui;
